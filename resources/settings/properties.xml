@@ -1,3 +1,5 @@
 <properties>
     <property id="LIFX_API_KEY" type="string"></property>
+    <property id="HIDE_LIGHTS" type="string"></property>
+    <property id="SHOW_LIGHTS" type="string"></property>
 </properties>

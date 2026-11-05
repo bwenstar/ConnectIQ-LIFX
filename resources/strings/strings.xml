@@ -6,4 +6,7 @@
     <string id="Yes">Yes</string>
     <string id="No">Yes</string>
     <string id="LIFX_API_KEY">LIFX API KEY</string>
+    <string id="HIDE_LIGHTS">Hide lights</string>
+    <string id="SHOW_LIGHTS">Only show lights</string>
+    <string id="filter_help">Comma separated locations, groups, Location/Group or light names</string>
 </strings>

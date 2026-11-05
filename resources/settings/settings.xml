@@ -2,4 +2,10 @@
     <setting propertyKey="@Properties.LIFX_API_KEY" title="@Strings.LIFX_API_KEY" prompt="@Strings.api_help" helpUrl="https://cloud.lifx.com/settings">
         <settingConfig type="alphaNumeric"></settingConfig>
     </setting>
+    <setting propertyKey="@Properties.HIDE_LIGHTS" title="@Strings.HIDE_LIGHTS" prompt="@Strings.filter_help">
+        <settingConfig type="alphaNumeric"></settingConfig>
+    </setting>
+    <setting propertyKey="@Properties.SHOW_LIGHTS" title="@Strings.SHOW_LIGHTS" prompt="@Strings.filter_help">
+        <settingConfig type="alphaNumeric"></settingConfig>
+    </setting>
 </settings>

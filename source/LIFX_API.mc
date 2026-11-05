@@ -14,7 +14,9 @@ class LIFX_API extends WatchUi.BehaviorDelegate {
     var auth_ok;
     var applying_selection = false;
     public var scenes;
-    public var lights;
+    public var lights;      // Visible lights only, sorted by label
+    public var rooms;       // See LightFilter.build_rooms()
+    public var filtered = false;  // True when some lights are hidden
     public var locations;
     public var groups;
     public var access_token;
@@ -87,11 +89,31 @@ class LIFX_API extends WatchUi.BehaviorDelegate {
         System.println("Lights request completed with responseCode: " + responseCode.toString());
         if (is_http_ok(responseCode)){
             self.auth_ok = true;
-            var num_lights = data.size();
-            System.println("Number of lights returned: " + num_lights);
-            self.lights = data as Lang.Array<Lang.Dictionary>;
-            for( var i = 0; i < num_lights; i++ ) {
-                self.lights[i].put("light_num", i);  // Used as a symbol later on, has to be a number
+            var all_lights = data as Lang.Array<Lang.Dictionary>;
+            System.println("Number of lights returned: " + all_lights.size());
+
+            var show = LightFilter.parse_list(LightFilter.read_setting("SHOW_LIGHTS"));
+            var hide = LightFilter.parse_list(LightFilter.read_setting("HIDE_LIGHTS"));
+            var visible = [];
+            for( var i = 0; i < all_lights.size(); i++ ) {
+                if (LightFilter.is_visible(all_lights[i], show, hide)) {
+                    visible.add(all_lights[i]);
+                }
+            }
+            LightFilter.sort_by(visible, "label");
+            for( var i = 0; i < visible.size(); i++ ) {
+                visible[i].put("light_num", i);  // Used as a menu identifier later on, has to be a number
+            }
+            self.filtered = visible.size() != all_lights.size();
+            self.lights = visible;
+            self.rooms = LightFilter.build_rooms(visible);
+            System.println("Showing " + visible.size() + " lights in " + self.rooms.size() + " rooms");
+            for( var i = 0; i < self.rooms.size(); i++ ) {
+                var names = "";
+                for( var j = 0; j < self.rooms[i]["lights"].size(); j++ ) {
+                    names += (j > 0 ? ", " : "") + visible[self.rooms[i]["lights"][j]]["label"];
+                }
+                System.println("Room " + self.rooms[i]["name"] + ": " + names);
             }
             System.println("Lights request Successful, written data below:");
             System.println(self.lights);
@@ -161,6 +183,36 @@ class LIFX_API extends WatchUi.BehaviorDelegate {
 
            // Make the Communications.makeWebRequest() call
            comms.makeWebRequest(url, params, options, method(:http_generic_handler));
+    }
+
+    function toggle_lights(indices) {
+        // Toggle the given lights (indices into self.lights) in one request
+        if (indices.size() == 0) {
+            self.applying_selection = false;
+            WatchUi.requestUpdate();
+            return;
+        }
+        var selector = "";
+        for( var i = 0; i < indices.size(); i++ ) {
+            if (i > 0) {
+                selector += ",";
+            }
+            selector += "id:" + self.lights[indices[i]]["id"];
+        }
+        self.toggle_power(selector);
+    }
+
+    function toggle_visible() {
+        // "Toggle all lights", but never touch hidden lights
+        if (!self.filtered) {
+            self.toggle_power("all");
+            return;
+        }
+        var indices = [];
+        for( var i = 0; i < self.lights.size(); i++ ) {
+            indices.add(i);
+        }
+        self.toggle_lights(indices);
     }
 
     function toggle_power(selector) {

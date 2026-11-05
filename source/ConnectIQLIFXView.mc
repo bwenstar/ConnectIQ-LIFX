@@ -94,9 +94,9 @@ class ConnectIQLIFXView extends WatchUi.View {
         // Generates the main menu
         var init_menu = new WatchUi.Menu();
         init_menu.setTitle("Select operation");
+        init_menu.addItem("Toggle a light", :toggle_light);
         init_menu.addItem("Toggle all lights", :toggle_all_lights);
         init_menu.addItem("Apply a Scene", :apply_scene);
-        init_menu.addItem("Toggle a light", :toggle_light);
         init_menu.addItem("Exit", :exit);
         return init_menu;
     }

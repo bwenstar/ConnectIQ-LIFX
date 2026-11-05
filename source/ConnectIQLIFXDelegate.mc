@@ -35,7 +35,7 @@ class LifxMainInputDelegate extends WatchUi.MenuInputDelegate {
             WatchUi.switchToView(loading_view, loading_delegate, WatchUi.SLIDE_DOWN);
             $.LIFX_API_OBJ.applying_selection = true;
             WatchUi.requestUpdate();
-            $.LIFX_API_OBJ.toggle_power("all");
+            $.LIFX_API_OBJ.toggle_visible();
 
         } else if (item == :apply_scene) {
             var menu = new WatchUi.Menu();
@@ -50,17 +50,17 @@ class LifxMainInputDelegate extends WatchUi.MenuInputDelegate {
             delegate = new LifxSceneInputDelegate();
             WatchUi.pushView(menu, delegate, WatchUi.SLIDE_DOWN);
         } else if (item == :toggle_light) {
+            var rooms = $.LIFX_API_OBJ.rooms;
             var menu = new WatchUi.Menu();
-            var delegate;
-            menu.setTitle("Select Light to toggle");
-            var num_lights = $.LIFX_API_OBJ.lights.size();
-            System.println("Number of lights to display: "+ num_lights);
-            for( var i = 0; i < num_lights; i++ ) {
-                menu.addItem($.LIFX_API_OBJ.lights[i]["label"], $.LIFX_API_OBJ.lights[i]["light_num"]);
+            menu.setTitle("Select room");
+            System.println("Number of rooms to display: " + rooms.size());
+            if (rooms.size() == 0) {
+                menu.addItem("No lights to show", :none);
             }
-
-            delegate = new LifxLightInputDelegate();
-            WatchUi.pushView(menu, delegate, WatchUi.SLIDE_DOWN);
+            for( var i = 0; i < rooms.size(); i++ ) {
+                menu.addItem(rooms[i]["name"], rooms[i]["room_num"]);
+            }
+            WatchUi.pushView(menu, new LifxRoomInputDelegate(), WatchUi.SLIDE_DOWN);
 
         } else if (item == :exit) {
             System.exit();
@@ -88,11 +88,36 @@ class LifxSceneInputDelegate extends WatchUi.MenuInputDelegate {
     }
 }
 
-class LifxLightInputDelegate extends WatchUi.MenuInputDelegate {
-    // Handles selection of a light to apply
-
+class LifxRoomInputDelegate extends WatchUi.MenuInputDelegate {
+    // Handles selection of a room, then shows that room's lights
     function initialize() {
         MenuInputDelegate.initialize();
+    }
+
+    function onMenuItem(item) {
+        System.println("Recieved room: " + item);
+        if (item == :none) {
+            return;
+        }
+        var room = $.LIFX_API_OBJ.rooms[item];
+        var light_nums = room["lights"];
+        var menu = new WatchUi.Menu();
+        menu.setTitle(room["name"]);
+        menu.addItem("Whole room", :whole_room);
+        for( var i = 0; i < light_nums.size(); i++ ) {
+            menu.addItem($.LIFX_API_OBJ.lights[light_nums[i]]["label"], light_nums[i]);
+        }
+        WatchUi.pushView(menu, new LifxLightInputDelegate(item), WatchUi.SLIDE_DOWN);
+    }
+}
+
+class LifxLightInputDelegate extends WatchUi.MenuInputDelegate {
+    // Handles selection of a light (or the whole room) to toggle
+    var room_num;
+
+    function initialize(room) {
+        MenuInputDelegate.initialize();
+        room_num = room;
     }
 
     function onMenuItem(item) {
@@ -101,8 +126,10 @@ class LifxLightInputDelegate extends WatchUi.MenuInputDelegate {
         WatchUi.pushView(loading_view, loading_delegate, WatchUi.SLIDE_DOWN);
         $.LIFX_API_OBJ.applying_selection = true;
         System.println("Recieved item: " + item);
-        var selected_light = $.LIFX_API_OBJ.lights[item];
-        $.LIFX_API_OBJ.toggle_power("id:" + selected_light["id"]);
-
+        if (item == :whole_room) {
+            $.LIFX_API_OBJ.toggle_lights($.LIFX_API_OBJ.rooms[room_num]["lights"]);
+        } else {
+            $.LIFX_API_OBJ.toggle_lights([item]);
+        }
     }
 }
